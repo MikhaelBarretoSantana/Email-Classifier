@@ -1,0 +1,20 @@
+Assunto: Urgente - Problema no sistema de login
+
+Prezados,
+
+Estou enfrentando sérias dificuldades para acessar o sistema desde segunda-feira. Quando tento fazer login, recebo consistentemente a mensagem "Credenciais inválidas", mesmo usando a senha correta que sempre funcionou.
+
+Já tentei as seguintes ações:
+- Reset de senha através do link "Esqueci minha senha" (2x)
+- Limpeza do cache e cookies do navegador
+- Tentativa em diferentes navegadores (Chrome, Firefox, Edge)
+- Verificação se o Caps Lock está desativado
+
+O problema persiste e preciso acessar urgentemente para finalizar os relatórios mensais que vencem amanhã. Meu protocolo de usuário é #USR-12345.
+
+Podem me ajudar com uma solução rápida?
+
+Obrigado,
+João Silva
+Departamento Financeiro
+joao.silva@empresa.com
