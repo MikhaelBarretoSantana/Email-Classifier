@@ -1,0 +1,47 @@
+# Ignora arquivos e pastas desnecessários para o deploy
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+*.sqlite3
+*.db
+*.log
+*.bak
+*.swp
+*.tmp
+# Jupyter Notebooks
+.ipynb_checkpoints/
+# VSCode
+.vscode/
+# Node/Frontend
+node_modules/
+dist/
+build/
+# Dados e modelos
+backend/datasets/*.pkl
+backend/datasets/*.csv
+# Docker
+*.pid
+*.pid.lock
+# Sistema
+.DS_Store
+Thumbs.db
+# Render
+backend/.venv/
+# Outros
+*.orig
+*.rej
+# Permite arquivos essenciais
+!backend/requirements.txt
+!backend/runtime.txt
+!backend/run.py
+!backend/app/**.py
+!frontend/package.json
+!frontend/tsconfig.json
+!frontend/vite.config.ts
+!frontend/src/**
+!frontend/public/**
+!README.md

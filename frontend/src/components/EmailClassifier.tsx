@@ -342,7 +342,7 @@ Olá, estou com problema para acessar minha conta no sistema. Quando tento fazer
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <div className="space-y-4">
-                    <div className="text-6xl text-white/70">
+                    <div className="text-6xl text-white">
                       <FontAwesomeIcon icon={faCloudUploadAlt} />
                     </div>
                     <div>
@@ -380,7 +380,7 @@ Olá, estou com problema para acessar minha conta no sistema. Quando tento fazer
                   <button
                     type="button"
                     onClick={removeFile}
-                    className="w-8 h-8 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg flex items-center justify-center transition-colors"
+                    className="w-8 h-8 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg flex items-center justify-center transition-colors p-2"
                     title="Remover arquivo"
                   >
                     <FontAwesomeIcon icon={faTimes} className="text-sm" />
