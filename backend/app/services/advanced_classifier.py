@@ -21,15 +21,15 @@ logger = logging.getLogger(__name__)
 class AdvancedEmailClassifier:
     """
     Classificador avançado de emails para o projeto AutoU
+    Agora recebe um repositório para persistência/carregamento do modelo.
     """
-    
-    def __init__(self, model_path: str = "../app/services/advanced_model.pkl"):
+    def __init__(self, model_path: str = None, model_repository=None):
         self.model_path = model_path
+        self.model_repository = model_repository
         self.model = None
         self.vectorizer = None
         self.scaler = None
         self.stemmer = RSLPStemmer()
-        
         # Palavras-chave otimizadas para contexto empresarial
         self.productive_keywords = {
             'erro', 'bug', 'falha', 'problema', 'defeito', 'crash',
@@ -47,7 +47,6 @@ class AdvancedEmailClassifier:
             'status', 'andamento', 'protocolo', 'número', 'código',
             'relatório', 'dados', 'informações', 'detalhes'
         }
-        
         self.unproductive_keywords = {
             'obrigado', 'obrigada', 'agradeço', 'agradecimento',
             'gratidão', 'grato', 'grata', 'reconhecido',
@@ -62,11 +61,10 @@ class AdvancedEmailClassifier:
             'família', 'saúde', 'melhoras', 'cuidados',
             'felicidade', 'alegria', 'paz'
         }
-        
         self._download_nltk_resources()
-        
-        if self._model_exists():
-            self._load_model()
+        # Carregar modelo via repositório
+        if self.model_repository and self.model_repository.model_exists():
+            self._load_model_from_repository()
     
     def _download_nltk_resources(self):
         """Baixa recursos necessários do NLTK"""
@@ -80,22 +78,19 @@ class AdvancedEmailClassifier:
                 except Exception as e:
                     logger.warning(f"Não foi possível baixar {resource}: {e}")
     
-    def _model_exists(self) -> bool:
-        """Verifica se o modelo existe"""
-        import os
-        return os.path.exists(self.model_path)
-    
-    def _load_model(self):
-        """Carrega modelo treinado"""
+    def _load_model_from_repository(self):
+        """Carrega modelo treinado via repositório"""
         try:
-            with open(self.model_path, 'rb') as f:
-                model_data = pickle.load(f)
+            model_data = self.model_repository.load()
+            if model_data:
                 self.model = model_data['model']
                 self.vectorizer = model_data['vectorizer']
                 self.scaler = model_data.get('scaler')
-            logger.info(f"✅ Modelo avançado carregado de {self.model_path}")
+                logger.info(f"✅ Modelo avançado carregado via repositório")
+            else:
+                self.model = None
         except Exception as e:
-            logger.error(f"❌ Erro ao carregar modelo: {e}")
+            logger.error(f"❌ Erro ao carregar modelo via repositório: {e}")
             self.model = None
     
     def preprocess_text(self, text: str) -> str:
