@@ -24,14 +24,14 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",  # React dev server
-        "http://localhost:5173",  # Vite dev server  
+        "http://localhost:3000",
+        "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
-        # Adicionar URLs de produção aqui quando necessário
+        "https://email-classifier-1-kkch.onrender.com",  # Adicione o domínio do frontend publicado
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["*"],  # Permite todos os métodos
     allow_headers=["*"],
 )
 
