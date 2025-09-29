@@ -17,7 +17,8 @@ COPY scripts/ ./scripts/
 COPY .env ./
 
 # Instala dependências Python
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt \
+    && python -m nltk.downloader rslp
 
 # Variáveis de ambiente
 ENV PYTHONUNBUFFERED=1
