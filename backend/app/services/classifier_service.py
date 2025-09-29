@@ -4,6 +4,8 @@ import logging
 import os
 from ..models import EmailResponse
 from .advanced_classifier import AdvancedEmailClassifier
+from ..repositories.advanced_model_repository import AdvancedModelRepository
+from ..repositories.email_log_repository import EmailLogRepository
 
 logger = logging.getLogger(__name__)
 
@@ -11,22 +13,26 @@ class AdvancedClassifierService:
     """
     Serviço de classificação avançada integrado à estrutura existente
     """
-    
+
     def __init__(self, model_path: str = "./datasets/advanced_model.pkl", fallback_enabled: bool = True):
         self.model_path = model_path
         self.fallback_enabled = fallback_enabled
         self.classifier = None
         self.fallback_classifier = None
-        
+        self.model_repository = AdvancedModelRepository(model_path)
+        self.log_repository = EmailLogRepository()
         # Tentar carregar modelo avançado
         self._initialize_classifier()
         
     
     def _initialize_classifier(self):
-        """Inicializa o classificador avançado"""
+        """Inicializa o classificador avançado usando o repositório"""
         try:
-            if os.path.exists(self.model_path):
-                self.classifier = AdvancedEmailClassifier(self.model_path)
+            if self.model_repository.model_exists():
+                self.classifier = AdvancedEmailClassifier(
+                    model_path=self.model_path,
+                    model_repository=self.model_repository
+                )
                 logger.info(f"✅ Classificador avançado carregado de {self.model_path}")
             else:
                 logger.warning(f"⚠️ Modelo avançado não encontrado em {self.model_path}")
@@ -36,22 +42,26 @@ class AdvancedClassifierService:
     
     def classify(self, content: str) -> EmailResponse:
         """
-        Classifica email usando o melhor classificador disponível
+        Classifica email usando o melhor classificador disponível e registra log.
         """
         if not content or not content.strip():
             raise ValueError("Conteúdo do email não pode estar vazio")
-        
         # Tentar classificador avançado primeiro
         if self.classifier:
             try:
                 result = self.classifier.classify(content)
-                return self._convert_to_email_response(result, method="advanced")
+                email_response = self._convert_to_email_response(result, method="advanced")
+                # Registrar log da classificação
+                self.log_repository.save_log({
+                    "input": content,
+                    "output": email_response.model_dump() if hasattr(email_response, "model_dump") else str(email_response),
+                    "method": "advanced"
+                })
+                return email_response
             except Exception as e:
                 logger.error(f"Erro no classificador avançado: {e}")
                 if not self.fallback_enabled:
                     raise
-        
-        
         # Se nenhum classificador está disponível
         raise RuntimeError("Nenhum classificador está disponível no momento")
     

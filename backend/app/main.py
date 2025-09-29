@@ -2,17 +2,14 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import logging
+import os
 from .services.classifier_service import AdvancedClassifierService
 from .services.file_processor import FileProcessor
 from .models import EmailResponse, HealthResponse, ModelInfo, StatisticsResponse
+from .utils.logger import setup_logger
 
-# Configurar logging diretamente (sem função setup_logger)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Configurar logger customizado
+logger = setup_logger("EmailClassifierAPI")
 
 # Criar aplicação FastAPI
 app = FastAPI(
@@ -38,37 +35,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Inicializar serviço de classificação global
 classifier_service = None
+
 
 @app.on_event("startup")
 async def startup_event():
     """Inicializar serviços na inicialização"""
     global classifier_service
     try:
-        classifier_service = AdvancedClassifierService()
+        # Usar variável de ambiente para caminho do modelo
+        model_path = os.getenv("ADVANCED_MODEL_PATH", "./datasets/advanced_model.pkl")
+        classifier_service = AdvancedClassifierService(model_path=model_path)
         logger.info("✅ Aplicação iniciada com sucesso")
-        
         # Teste de saúde na inicialização
         health = classifier_service.health_check()
         logger.info(f"Status de saúde: {health['status']}")
-        
     except Exception as e:
         logger.error(f"❌ Erro na inicialização: {e}")
         # Continuar mesmo com erro para permitir debug
 
 def get_classifier_service() -> AdvancedClassifierService:
-    """Dependency para obter o serviço de classificação"""
+    """
+    Dependency para obter o serviço de classificação.
+    Retorna a instância global do serviço de classificação, inicializando se necessário.
+    Utiliza o caminho do modelo definido na variável de ambiente ADVANCED_MODEL_PATH.
+    Returns:
+        AdvancedClassifierService: Instância do serviço de classificação.
+    """
     global classifier_service
     if classifier_service is None:
-        classifier_service = AdvancedClassifierService()
+        model_path = os.getenv("ADVANCED_MODEL_PATH", "./datasets/advanced_model.pkl")
+        classifier_service = AdvancedClassifierService(model_path=model_path)
     return classifier_service
 
 # ==================== ENDPOINTS PRINCIPAIS ====================
 
 @app.get("/")
 async def root():
-    """Endpoint raiz com informações da API"""
+    """
+    Endpoint raiz da API.
+    Retorna informações básicas sobre o sistema, versão, status e endpoints disponíveis.
+    Returns:
+        dict: Informações da API.
+    """
     return {
         "message": "Sistema Avançado de Classificação de Emails - AutoU",
         "version": "2.0.0", 
@@ -87,36 +98,37 @@ async def classify_email(
     service: AdvancedClassifierService = Depends(get_classifier_service)
 ):
     """
-    Classifica texto de email diretamente
+    Classifica texto de email diretamente.
+    Args:
+        text (str): Conteúdo do email para classificação.
+        service (AdvancedClassifierService): Serviço de classificação injetado.
+    Returns:
+        EmailResponse: Resultado da classificação do email.
+    Raises:
+        HTTPException: Para erros de validação ou internos.
     """
     try:
         logger.info(f"📝 Classificando texto: {len(text)} caracteres")
-        
         # Validações
         if not text or not text.strip():
             raise HTTPException(
                 status_code=400,
                 detail="O texto não pode estar vazio"
             )
-        
         if len(text.strip()) < 10:
             raise HTTPException(
                 status_code=400,
                 detail="Texto muito curto. Mínimo de 10 caracteres necessário."
             )
-        
         if len(text) > 50000:
             raise HTTPException(
                 status_code=400,
                 detail="Texto muito longo. Máximo de 50.000 caracteres."
             )
-        
         # Classificar
         result = service.classify(text)
-        
         logger.info(f"✅ Classificação concluída: {result.classification} ({result.confidence:.2%})")
         return result
-        
     except HTTPException:
         raise
     except ValueError as e:
@@ -135,29 +147,31 @@ async def classify_file(
     service: AdvancedClassifierService = Depends(get_classifier_service)
 ):
     """
-    Classifica email a partir de arquivo enviado
+    Classifica email a partir de arquivo enviado.
+    Args:
+        file (UploadFile): Arquivo .txt ou .pdf contendo o email.
+        service (AdvancedClassifierService): Serviço de classificação injetado.
+    Returns:
+        EmailResponse: Resultado da classificação do email extraído do arquivo.
+    Raises:
+        HTTPException: Para erros de validação ou internos.
     """
     try:
         logger.info(f"📁 Processando arquivo: {file.filename}")
-        
         if not file.filename:
             raise HTTPException(
                 status_code=400,
                 detail="Nenhum arquivo foi enviado"
             )
-        
         # Processar arquivo
         text = await FileProcessor.process_uploaded_file(file)
-        
         if len(text.strip()) < 10:
             raise HTTPException(
                 status_code=400,
                 detail="Arquivo contém muito pouco texto para classificação (mínimo 10 caracteres)."
             )
-        
         # Classificar
         result = service.classify(text)
-        
         # Adicionar informações do arquivo
         result.additional_info.update({
             'filename': file.filename,
@@ -165,10 +179,8 @@ async def classify_file(
             'extraction_method': 'file_upload',
             'file_type': file.content_type
         })
-        
         logger.info(f"✅ Arquivo classificado: {result.classification} ({result.confidence:.2%})")
         return result
-        
     except HTTPException:
         raise
     except Exception as e:
@@ -181,18 +193,20 @@ async def classify_file(
 @app.get("/api/health")
 async def health_check(service: AdvancedClassifierService = Depends(get_classifier_service)):
     """
-    Verifica saúde da aplicação e dos modelos de IA
+    Verifica saúde da aplicação e dos modelos de IA.
+    Args:
+        service (AdvancedClassifierService): Serviço de classificação injetado.
+    Returns:
+        JSONResponse: Status de saúde da aplicação e dos modelos.
     """
     try:
         health_status = service.health_check()
-        
         if health_status['status'] == 'healthy':
             status_code = 200
         elif health_status['status'] == 'degraded':
             status_code = 200
         else:
             status_code = 503
-        
         return JSONResponse(
             status_code=status_code,
             content={
@@ -215,7 +229,15 @@ async def health_check(service: AdvancedClassifierService = Depends(get_classifi
 
 @app.get("/api/model-info")
 async def get_model_info(service: AdvancedClassifierService = Depends(get_classifier_service)):
-    """Informações detalhadas sobre os modelos carregados"""
+    """
+    Retorna informações detalhadas sobre os modelos carregados.
+    Args:
+        service (AdvancedClassifierService): Serviço de classificação injetado.
+    Returns:
+        dict: Informações dos modelos carregados.
+    Raises:
+        HTTPException: Em caso de erro interno.
+    """
     try:
         return service.get_model_info()
     except Exception as e:
@@ -224,7 +246,15 @@ async def get_model_info(service: AdvancedClassifierService = Depends(get_classi
 
 @app.get("/api/stats")
 async def get_statistics(service: AdvancedClassifierService = Depends(get_classifier_service)):
-    """Estatísticas de uso e performance da aplicação"""
+    """
+    Retorna estatísticas de uso e performance da aplicação.
+    Args:
+        service (AdvancedClassifierService): Serviço de classificação injetado.
+    Returns:
+        dict: Estatísticas de uso e performance.
+    Raises:
+        HTTPException: Em caso de erro interno.
+    """
     try:
         return service.get_statistics()
     except Exception as e:
