@@ -70,7 +70,7 @@ def get_classifier_service() -> AdvancedClassifierService:
 
 # ==================== ENDPOINTS KEEP-ALIVE ====================
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     """
     Endpoint raiz da API - OTIMIZADO para keep-alive.
@@ -91,7 +91,7 @@ async def root():
         }
     }
 
-@app.get("/ping")
+@app.api_route("/ping", methods=["GET", "HEAD"])
 async def ping():
     """
     Endpoint ultra-rápido para keep-alive.
@@ -104,7 +104,7 @@ async def ping():
         "status": "alive"
     }
 
-@app.get("/uptimerobot")
+@app.api_route("/uptimerobot", methods=["GET", "HEAD"])
 async def uptimerobot_check():
     """
     Endpoint específico para monitoramento do UpTimeRobot.
