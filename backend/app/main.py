@@ -7,6 +7,7 @@ from .services.classifier_service import AdvancedClassifierService
 from .services.file_processor import FileProcessor
 from .models import EmailResponse, HealthResponse, ModelInfo, StatisticsResponse
 from .utils.logger import setup_logger
+from datetime import datetime
 
 # Configurar logger customizado
 logger = setup_logger("EmailClassifierAPI")
@@ -28,7 +29,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
-        "https://email-classifier-1-kkch.onrender.com",  # Adicione o domínio do frontend publicado
+        "https://email-classifier-1-kkch.onrender.com", 
     ],
     allow_credentials=True,
     allow_methods=["*"],  # Permite todos os métodos
@@ -39,22 +40,19 @@ app.add_middleware(
 # Inicializar serviço de classificação global
 classifier_service = None
 
-
 @app.on_event("startup")
 async def startup_event():
     """Inicializar serviços na inicialização"""
     global classifier_service
     try:
-        # Usar variável de ambiente para caminho do modelo
         model_path = os.getenv("ADVANCED_MODEL_PATH", "./datasets/advanced_model.pkl")
         classifier_service = AdvancedClassifierService(model_path=model_path)
         logger.info("✅ Aplicação iniciada com sucesso")
-        # Teste de saúde na inicialização
+
         health = classifier_service.health_check()
         logger.info(f"Status de saúde: {health['status']}")
     except Exception as e:
         logger.error(f"❌ Erro na inicialização: {e}")
-        # Continuar mesmo com erro para permitir debug
 
 def get_classifier_service() -> AdvancedClassifierService:
     """
@@ -70,27 +68,127 @@ def get_classifier_service() -> AdvancedClassifierService:
         classifier_service = AdvancedClassifierService(model_path=model_path)
     return classifier_service
 
-# ==================== ENDPOINTS PRINCIPAIS ====================
+# ==================== ENDPOINTS KEEP-ALIVE ====================
 
 @app.get("/")
 async def root():
     """
-    Endpoint raiz da API.
-    Retorna informações básicas sobre o sistema, versão, status e endpoints disponíveis.
-    Returns:
-        dict: Informações da API.
+    Endpoint raiz da API - OTIMIZADO para keep-alive.
+    Retorna informações básicas sem carregar o modelo de IA.
     """
     return {
         "message": "Sistema Avançado de Classificação de Emails - AutoU",
         "version": "2.0.0", 
         "status": "operational",
+        "timestamp": datetime.utcnow().isoformat(),
+        "uptime": "active",
         "endpoints": {
             "classify": "/api/classify",
             "classify_file": "/api/classify-file",
             "health": "/api/health",
+            "ping": "/ping",
             "docs": "/docs"
         }
     }
+
+@app.get("/ping")
+async def ping():
+    """
+    Endpoint ultra-rápido para keep-alive.
+    Não carrega nenhum serviço pesado, apenas retorna pong.
+    Ideal para UptimeRobot e GitHub Actions.
+    """
+    return {
+        "pong": True,
+        "timestamp": datetime.utcnow().isoformat(),
+        "status": "alive"
+    }
+
+@app.get("/uptimerobot")
+async def uptimerobot_check():
+    """
+    Endpoint específico para monitoramento do UpTimeRobot.
+    Retorna resposta mínima e rápida.
+    """
+    return {
+        "status": "ok", 
+        "service": "email-classifier",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+@app.get("/api/health")
+async def health_check(
+    service: AdvancedClassifierService = Depends(get_classifier_service)
+):
+    """
+    Health check COMPLETO - verifica modelos de IA.
+    ⚠️ NÃO use este endpoint para keep-alive pois é mais pesado.
+    Use /ping ou /uptimerobot ao invés deste.
+    """
+    try:
+        health_status = service.health_check()
+        
+        if health_status['status'] == 'healthy':
+            status_code = 200
+        elif health_status['status'] == 'degraded':
+            status_code = 200
+        else:
+            status_code = 503
+            
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                'timestamp': datetime.utcnow().isoformat(),
+                'application': 'Email Classifier API - AutoU',
+                'version': '2.0.0',
+                **health_status
+            }
+        )
+    except Exception as e:
+        logger.error(f"❌ Erro no health check: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                'status': 'unhealthy',
+                'error': str(e),
+                'application': 'Email Classifier API - AutoU',
+                'timestamp': datetime.utcnow().isoformat()
+            }
+        )
+
+# ==================== ENDPOINT DE WARMUP ====================
+
+@app.get("/warmup")
+async def warmup(
+    service: AdvancedClassifierService = Depends(get_classifier_service)
+):
+    """
+    Endpoint para aquecer o modelo após cold start.
+    Faz uma classificação dummy para carregar o modelo na memória.
+    """
+    try:
+        # Texto dummy para warm-up
+        dummy_text = "Este é um email de teste para aquecimento do sistema."
+        result = service.classify(dummy_text)
+        
+        return {
+            "status": "warmed_up",
+            "message": "Modelo aquecido e pronto para uso",
+            "timestamp": datetime.utcnow().isoformat(),
+            "model_ready": True
+        }
+    except Exception as e:
+        logger.error(f"❌ Erro no warmup: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "warmup_failed",
+                "error": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+# ==================== ENDPOINTS PRINCIPAIS ====================
 
 @app.post("/api/classify", response_model=EmailResponse)
 async def classify_email(
