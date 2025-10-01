@@ -363,9 +363,9 @@ Contribuições são bem-vindas! Para contribuir:
 ## 🔗 Links Importantes
 
 **🌐 Aplicação Online**: https://email-classifier-1-kkch.onrender.com
-- **🎥 Vídeo Demonstrativo**: [Link do YouTube]
-- **📊 Documentação da API**: [Link]/docs
-- **🐛 Report Issues**: [Link]/issues
+**🎥 Vídeo Demonstrativo**: https://youtu.be/Wrr8ebIsE9o
+**📊 Documentação da API**: https://email-classifier-nxkn.onrender.com/docs
+**🐛 Report Issues**: https://github.com/MikhaelBarretoSantana/Email-Classifier/issues
 
 ---
 
