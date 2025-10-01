@@ -362,7 +362,7 @@ Contribuições são bem-vindas! Para contribuir:
 
 ## 🔗 Links Importantes
 
-- **🌐 Aplicação Online**: [Link da aplicação deployada]
+**🌐 Aplicação Online**: https://email-classifier-1-kkch.onrender.com
 - **🎥 Vídeo Demonstrativo**: [Link do YouTube]
 - **📊 Documentação da API**: [Link]/docs
 - **🐛 Report Issues**: [Link]/issues
