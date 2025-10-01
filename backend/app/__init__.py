@@ -1,6 +1,3 @@
-# backend/app/__init__.py
-
-# Importar apenas os modelos que existem
 from .models import (
     EmailResponse,
     ClassificationRequest,
@@ -11,9 +8,6 @@ from .models import (
     TrainingResponse,
     ErrorResponse
 )
-
-# Se você tinha outros modelos no arquivo antigo, adicione aqui:
-# from .models import ClassificationHistory, APIStatus  # se existirem
 
 __all__ = [
     "EmailResponse",

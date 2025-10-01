@@ -1,4 +1,3 @@
-# backend/app/main.py
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -12,7 +11,6 @@ from datetime import datetime
 # Configurar logger customizado
 logger = setup_logger("EmailClassifierAPI")
 
-# Criar aplicação FastAPI
 app = FastAPI(
     title="Sistema Avançado de Classificação de Emails - AutoU",
     description="API com IA para classificação inteligente de emails em Produtivo/Improdutivo",
@@ -93,11 +91,7 @@ async def root():
 
 @app.api_route("/ping", methods=["GET", "HEAD"])
 async def ping():
-    """
-    Endpoint ultra-rápido para keep-alive.
-    Não carrega nenhum serviço pesado, apenas retorna pong.
-    Ideal para UptimeRobot e GitHub Actions.
-    """
+    # Endpoint rápido para keep-alive
     return {
         "pong": True,
         "timestamp": datetime.utcnow().isoformat(),
@@ -106,10 +100,6 @@ async def ping():
 
 @app.api_route("/uptimerobot", methods=["GET", "HEAD"])
 async def uptimerobot_check():
-    """
-    Endpoint específico para monitoramento do UpTimeRobot.
-    Retorna resposta mínima e rápida.
-    """
     return {
         "status": "ok", 
         "service": "email-classifier",
@@ -120,11 +110,7 @@ async def uptimerobot_check():
 async def health_check(
     service: AdvancedClassifierService = Depends(get_classifier_service)
 ):
-    """
-    Health check COMPLETO - verifica modelos de IA.
-    ⚠️ NÃO use este endpoint para keep-alive pois é mais pesado.
-    Use /ping ou /uptimerobot ao invés deste.
-    """
+    # Health check completo
     try:
         health_status = service.health_check()
         
@@ -162,10 +148,7 @@ async def health_check(
 async def warmup(
     service: AdvancedClassifierService = Depends(get_classifier_service)
 ):
-    """
-    Endpoint para aquecer o modelo após cold start.
-    Faz uma classificação dummy para carregar o modelo na memória.
-    """
+    # Endpoint para aquecer o modelo após cold start
     try:
         # Texto dummy para warm-up
         dummy_text = "Este é um email de teste para aquecimento do sistema."
